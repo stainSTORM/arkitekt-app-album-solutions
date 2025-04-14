@@ -1,0 +1,13 @@
+[project]
+name = "arkitekt-app-album-solutions"
+version = "0.1.0"
+description = "Arkitekt app registering all available album solutions on the system where the app is executed."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "album>=0.11.0",
+    "arkitekt-next[all]==0.8.82",
+    "mikro-next>=0.1.53",
+    "setuptools>=78.1.0",
+    "xarray>=2025.3.1",
+]

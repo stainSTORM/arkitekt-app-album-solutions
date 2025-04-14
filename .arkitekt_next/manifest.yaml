@@ -1,0 +1,6 @@
+author: random
+entrypoint: app
+identifier: arkitekt-app-album-solutions
+scopes:
+- read
+version: 0.0.1
