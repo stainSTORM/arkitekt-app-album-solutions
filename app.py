@@ -7,7 +7,7 @@ from rekuest_next.api.schema import (
     PortKind,
     ActionKind,
 )
-from arkitekt_next import progress
+from arkitekt_next import progress, register
 from rekuest_next.structures.default import get_default_structure_registry
 from album.api import Album
 from rekuest_next.definition.registry import (
@@ -17,11 +17,27 @@ from rekuest_next.agents.registry import get_default_extension_registry
 from rekuest_next.agents.extension import BaseAgentExtension
 from rekuest_next.agents.base import BaseAgent
 from koil import run_spawned
-
+from mikro_next.api.schema import File
 from functools import partial
 
 
 extension_registry = get_default_extension_registry()
+
+
+class LocalFile:
+    def __init__(self, file: File):
+        self.file = file
+
+    def get_file(self) -> File:
+        return self.file
+
+
+class LocalDirectory:
+    def __init__(self, file: File):
+        self.file = file
+
+    def get_file(self) -> File:
+        return self.file
 
 
 class AlbumExtension:
@@ -84,10 +100,33 @@ class AlbumExtension:
 
                 arg_defs = setup.get("args", [])  # type: ignore
                 for arg_def in arg_defs:  # type: ignore
+                    kind_map: dict[str, PortKind] = {
+                        "string": PortKind.STRING,
+                        "int": PortKind.INT,
+                        "float": PortKind.FLOAT,
+                        "bool": PortKind.BOOL,
+                        "file": PortKind.MEMORY_STRUCTURE,
+                        "directory": PortKind.MEMORY_STRUCTURE,
+                    }
+
+                    identifier_map: dict[str, str | None] = {
+                        "string": None,
+                        "int": None,
+                        "float": None,
+                        "bool": None,
+                        "file": "app.localfile",
+                        "directory": "app.localdirectory",
+                    }
+
+                    identifier = identifier_map[arg_def["type"]]  # type: ignore
+                    kind = kind_map[arg_def["type"]]  # type: ignore
+
                     arkitekt_arg = PortInput(
                         key=arg_def["name"],  # type: ignore
                         description=arg_def["description"],  # type: ignore
-                        kind=PortKind.STRING,
+                        default=arg_def.get("default"),  # type: ignore
+                        kind=kind,
+                        identifier=identifier,
                         nullable=False,
                     )
                     solution_args.append(arkitekt_arg)
@@ -136,6 +175,7 @@ class AlbumExtension:
             raise ValueError(f"No implementation found for interface {interface}")
 
         def assign(**kwargs):  # type: ignore
+            print("!!!!!!!!!!!!!!!!", kwargs)
             progress(0, "Starting album solution")
             if not self.album.is_installed(interface):
                 progress(50, "Installing album solution")
@@ -157,6 +197,18 @@ class AlbumExtension:
             structure_registry=get_default_structure_registry(),
             definition=impl.definition,
         )
+
+
+@register
+def to_local_file(file: File) -> LocalFile:
+    """Convert a File to a LocalFile."""
+    return LocalFile(file)
+
+
+@register
+def to_local_directory(file: File) -> LocalDirectory:
+    """Convert a File to a LocalFile."""
+    return LocalDirectory(file)
 
 
 extension_registry.register(AlbumExtension())
